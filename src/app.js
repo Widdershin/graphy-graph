@@ -11,9 +11,9 @@ function App ({DOM}) {
 
  const f$ = DOM
     .select('.f')
-    .events('chang')
+    .events('change')
     .map(ev => ev.target.value)
-   .startWith('x * x');
+    .startWith('x * x');
 
   return {
     DOM: f$.map(f =>
@@ -36,89 +36,79 @@ function App ({DOM}) {
   };
 }
 
-function buildPath ({width, height}, fString) {
+function pointsToPath ({width, height}, points) {
+  return `M 0 ${height - 50} ` + points.map((point, index) => `L ${index} ${height - point - 50}`).join(' ');
+}
+
+function buildPoints ({width, height}, fString) {
   const f = new Function('x', 'return ' + fString);
 
   const points = new Array(width).fill(0).map((_, index) => f(index));
 
-  return `M 0 ${height - 50} ` + points.map((point, index) => `L ${index} ${height - point - 50}`).join(' ');
+  return points;
 }
 
-function buildDerivativePath ({width, height}, fString) {
-  const f = new Function('x', 'return ' + fString);
-
+function derive (points) {
   const initialState = {
     previousValue: null,
     differences: []
   }
 
-  const points = new Array(width)
-    .fill(0)
-    .map((_, index) => f(index))
-    .reduce((acc, val) => {
-      if (!acc.previousValue) {
-        return {
-          ...acc,
 
-          previousValue: val
-        }
-      }
-
+  const diff = (acc, val) => {
+    if (!acc.previousValue) {
       return {
-        differences: [...acc.differences, val - acc.previousValue],
+        ...acc,
 
         previousValue: val
       }
-    }, initialState).differences;
+    }
 
-  return `M 0 ${height - 50} ` + points.map((point, index) => `L ${index} ${height - point - 50}`).join(' ');
-}
+    return {
+      differences: [...acc.differences, val - acc.previousValue],
 
-function buildDerivativeDerivativePath ({width, height}, fString) {
-  const f = new Function('x', 'return ' + fString);
-
-  const initialState = {
-    previousValue: null,
-    differences: []
+      previousValue: val
+    }
   }
 
-  const points = new Array(width)
-    .fill(0)
-    .map((_, index) => f(index))
-    .reduce((acc, val) => {
-      if (!acc.previousValue) {
-        return {
-          ...acc,
 
-          previousValue: val
-        }
-      }
+  return points.reduce(diff, initialState).differences;
+}
 
-      return {
-        differences: [...acc.differences, val - acc.previousValue],
+function buildPath (dimensions, fString) {
+  return pointsToPath(
+    dimensions,
+    buildPoints(
+      dimensions,
+      fString
+    )
+  );
+}
 
-        previousValue: val
-      }
-    }, initialState).differences;
+function buildDerivativePath (dimensions, fString) {
+  return pointsToPath(
+    dimensions,
+    derive(
+      buildPoints(
+        dimensions,
+        fString
+      )
+    )
+  );
+}
 
-  const points2 = points
-    .reduce((acc, val) => {
-      if (!acc.previousValue) {
-        return {
-          ...acc,
-
-          previousValue: val
-        }
-      }
-
-      return {
-        differences: [...acc.differences, val - acc.previousValue],
-
-        previousValue: val
-      }
-    }, initialState).differences;
-
-  return `M 0 ${height - 50} ` + points2.map((point, index) => `L ${index} ${height - point - 50}`).join(' ');
+function buildDerivativeDerivativePath (dimensions, fString) {
+  return pointsToPath(
+    dimensions,
+    derive(
+      derive(
+        buildPoints(
+          dimensions,
+          fString
+        )
+      )
+    )
+  );
 }
 
 export default App;
