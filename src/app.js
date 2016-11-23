@@ -2,12 +2,9 @@ import {div, h, input} from '@cycle/dom';
 import xs from 'xstream';
 
 function App ({DOM}) {
-  const width = 500;
-  const height = 200;
-
-  function f (x) {
-    return x * x;
-  }
+  // TODO - do this better
+  const width = window.innerWidth - 30;
+  const height = (window.innerHeight - 120) / 3;;
 
  const f$ = DOM
     .select('.f')
@@ -17,19 +14,19 @@ function App ({DOM}) {
 
   return {
     DOM: f$.map(f =>
-      div([
+      div('.derivatives', [
         input('.f', {attrs: {value: f}}),
 
-        h('svg', {attrs: {width, height}}, [
-          h('path', {attrs: {d: buildPath({width, height}, f), fill: 'none', stroke: 'black'}})
+        h('svg', {attrs: {width, height, viewBox: `${-(width / 2)} ${(height / 2)} ${width} ${height}`}}, [
+          h('path', {attrs: {d: buildPath({width, height}, f), fill: 'none', stroke: 'white'}})
         ]),
 
-        h('svg', {attrs: {width, height}}, [
-          h('path', {attrs: {d: buildDerivativePath({width, height}, f), fill: 'none', stroke: 'black'}})
+        h('svg', {attrs: {width, height, viewBox: `${-(width / 2)} ${(height / 2)} ${width} ${height}`}}, [
+          h('path', {attrs: {d: buildDerivativePath({width, height}, f), fill: 'none', stroke: 'white'}})
         ]),
 
-        h('svg', {attrs: {width, height}}, [
-          h('path', {attrs: {d: buildDerivativeDerivativePath({width, height}, f), fill: 'none', stroke: 'black'}})
+        h('svg', {attrs: {width, height, viewBox: `${-(width / 2)} ${(height / 2)} ${width} ${height}`}}, [
+          h('path', {attrs: {d: buildDerivativeDerivativePath({width, height}, f), fill: 'none', stroke: 'white'}})
         ])
       ])
     )
@@ -37,7 +34,7 @@ function App ({DOM}) {
 }
 
 function pointsToPath ({width, height}, points) {
-  return `M 0 ${height - 50} ` + points.map((point, index) => `L ${index} ${height - point - 50}`).join(' ');
+  return `M 0 ${height} ` + points.map((point, index) => `L ${index} ${height - point}`).join(' ');
 }
 
 function buildPoints ({width, height}, fString) {
@@ -56,7 +53,7 @@ function derive (points) {
 
 
   const diff = (acc, val) => {
-    if (!acc.previousValue) {
+    if (acc.previousValue === null) {
       return {
         ...acc,
 
