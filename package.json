@@ -1,0 +1,19 @@
+{
+  "name": "graphy-graph",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "cycle-scripts-widdershin": "0.3.1"
+  },
+  "dependencies": {
+    "@cycle/dom": "^14.1.0",
+    "@cycle/xstream-run": "^3.1.0",
+    "xstream": "^8.0.0"
+  },
+  "scripts": {
+    "start": "cycle-scripts start",
+    "test": "cycle-scripts test",
+    "build": "cycle-scripts build",
+    "take-off-training-wheels": "cycle-scripts take-off-training-wheels"
+  }
+}
