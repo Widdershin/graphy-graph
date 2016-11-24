@@ -1,82 +1,118 @@
 import {div, h, input, label} from '@cycle/dom';
 import xs from 'xstream';
 
-function App ({DOM}) {
-  // TODO - do this better
-  const width = window.innerWidth - 30;
-  const height = (window.innerHeight - 120) / 3;
+function graphDimensions () {
+  return {
+    width: window.innerWidth - 30,
+    height: (window.innerHeight - 120) / 3
+  }
+}
+
+function executeF (fString, width) {
+  try {
+    const f = new Function('x', 'return ' + fString);
+
+    const points = new Array(width)
+      .fill(0)
+      .map((_, index) => f(index - width / 2));
+
+    return {points};
+  } catch (error) {
+    console.error(error);
+    return {error};
+  }
+}
+
+function updateF (state, fString) {
+  const executionResult = executeF(fString, state.dimensions.width);
+
+  if (executionResult.error) {
+    return {
+      ...state,
+
+      ...executionResult,
+
+      f: fString
+    }
+  }
+
+  return {
+    ...state,
+
+    ...executionResult,
+
+    error: null,
+
+    f: fString
+  }
+}
+
+function updateDimensions (state, dimensions) {
+  return updateF({
+    ...state,
+
+    dimensions
+  }, state.f);
+}
+
+function App ({DOM, Resize}) {
+  const startingDimensions = graphDimensions();
+  const startingF = 'x * x';
+
+  const initialState = {
+    dimensions: startingDimensions,
+    points: executeF(startingF, startingDimensions.width).points,
+    f: startingF,
+    error: null
+  };
+
+  const resize$ = Resize
+    .debug('now!')
+    .map(graphDimensions)
+    .map(dimensions => (state) => updateDimensions(state, dimensions))
 
   const f$ = DOM
     .select('.f')
     .events('input')
     .map(ev => ev.target.value)
-    .startWith('x * x');
+    .map(fString => (state) => updateF(state, fString))
 
-  function executeF (fString) {
-    try {
-      const f = new Function('x', 'return ' + fString);
+  const reducer$ = xs.merge(
+    resize$,
+    f$
+  );
 
-      const points = new Array(width)
-        .fill(0)
-        .map((_, index) => f(index - width / 2));
-
-      return {points};
-    } catch (error) {
-      return {error};
-    }
-  }
-
-  function tryExecute (state, fString) {
-    const executionResult = executeF(fString);
-
-    if (executionResult.error) {
-      return {
-        ...state,
-
-        ...executionResult
-      }
-    }
-
-    return {
-      ...executionResult,
-
-      error: null
-    }
-  }
-
-  const state$ = f$.fold(tryExecute, {error: null, points: []}).drop(1);
+  const state$ = reducer$.fold((state, reducer) => reducer(state), initialState).debug('state');
 
   return {
-    DOM: xs.combine(f$, state$).map(([f, state]) =>
+    DOM: state$.map(({points, error, dimensions, f}) =>
       div('.derivatives', [
         div('.input-container', [
           label('.formula'),
-          input('.f', {class: {error: !!state.error}, attrs: {value: f}})
+          input('.f', {class: {error: !!error}, attrs: {value: f}})
         ]),
 
         renderGraph({
-          width,
-          height,
-          path: buildPath({width, height}, state.points)
+          dimensions,
+          path: buildPath(dimensions, points)
         }),
 
         renderGraph({
-          width,
-          height,
-          path: buildDerivativePath({width, height}, state.points)
+          dimensions,
+          path: buildDerivativePath(dimensions, points)
         }),
 
         renderGraph({
-          width,
-          height,
-          path: buildDerivativeDerivativePath({width, height}, state.points)
+          dimensions,
+          path: buildDerivativeDerivativePath(dimensions, points)
         })
       ])
     )
   };
 }
 
-function renderGraph({width, height, path}) {
+function renderGraph({dimensions, path}) {
+  const {width, height} = dimensions;
   const left = -(width / 2);
 
   return (
