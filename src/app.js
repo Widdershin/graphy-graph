@@ -1,4 +1,4 @@
-import {div, h, input} from '@cycle/dom';
+import {div, h, input, label} from '@cycle/dom';
 import xs from 'xstream';
 
 function App ({DOM}) {
@@ -33,11 +33,27 @@ function App ({DOM}) {
   return {
     DOM: xs.combine(f$, points$).map(([f, points]) =>
       div('.derivatives', [
-        input('.f', {attrs: {value: f}}),
+        div('.input-container', [
+          input('.f', {attrs: {value: f}})
+        ]),
 
-        renderGraph({width, height, path: buildPath({width, height}, points)}),
-        renderGraph({width, height, path: buildDerivativePath({width, height}, points)}),
-        renderGraph({width, height, path: buildDerivativeDerivativePath({width, height}, points)}),
+        renderGraph({
+          width,
+          height,
+          path: buildPath({width, height}, points)
+        }),
+
+        renderGraph({
+          width,
+          height,
+          path: buildDerivativePath({width, height}, points)
+        }),
+
+        renderGraph({
+          width,
+          height,
+          path: buildDerivativeDerivativePath({width, height}, points)
+        })
       ])
     )
   };
