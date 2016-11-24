@@ -1,4 +1,4 @@
-import {div, h, input} from '@cycle/dom';
+import {div, h, input, label} from '@cycle/dom';
 import xs from 'xstream';
 
 function App ({DOM}) {
@@ -13,31 +13,64 @@ function App ({DOM}) {
     .startWith('x * x');
 
   function executeF (fString) {
-    let points;
-
     try {
       const f = new Function('x', 'return ' + fString);
 
-      points = new Array(width)
+      const points = new Array(width)
         .fill(0)
         .map((_, index) => f(index - width / 2));
-    } catch (e) {
-      return null;
-    }
 
-    return points;
+      return {points};
+    } catch (error) {
+      return {error};
+    }
   }
 
-  const points$ = f$.map(executeF).filter(points => !!points);
+  function tryExecute (state, fString) {
+    const executionResult = executeF(fString);
+
+    if (executionResult.error) {
+      return {
+        ...state,
+
+        ...executionResult
+      }
+    }
+
+    return {
+      ...executionResult,
+
+      error: null
+    }
+  }
+
+  const state$ = f$.fold(tryExecute, {error: null, points: []}).drop(1);
 
   return {
-    DOM: xs.combine(f$, points$).map(([f, points]) =>
+    DOM: xs.combine(f$, state$).map(([f, state]) =>
       div('.derivatives', [
-        input('.f', {attrs: {value: f}}),
+        div('.input-container', [
+          label('.formula'),
+          input('.f', {class: {error: !!state.error}, attrs: {value: f}})
+        ]),
 
-        renderGraph({width, height, path: buildPath({width, height}, points)}),
-        renderGraph({width, height, path: buildDerivativePath({width, height}, points)}),
-        renderGraph({width, height, path: buildDerivativeDerivativePath({width, height}, points)}),
+        renderGraph({
+          width,
+          height,
+          path: buildPath({width, height}, state.points)
+        }),
+
+        renderGraph({
+          width,
+          height,
+          path: buildDerivativePath({width, height}, state.points)
+        }),
+
+        renderGraph({
+          width,
+          height,
+          path: buildDerivativeDerivativePath({width, height}, state.points)
+        })
       ])
     )
   };
