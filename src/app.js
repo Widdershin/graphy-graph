@@ -1,5 +1,6 @@
 import {div, h, input} from '@cycle/dom';
 import xs from 'xstream';
+import debounce from 'xstream/extra/debounce';
 
 function App ({DOM}) {
   // TODO - do this better
@@ -8,7 +9,8 @@ function App ({DOM}) {
 
  const f$ = DOM
     .select('.f')
-    .events('change')
+    .events('input')
+    .compose(debounce(150))
     .map(ev => ev.target.value)
     .startWith('x * x');
 
