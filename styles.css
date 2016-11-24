@@ -1,0 +1,28 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  background: #112;
+}
+
+.hello-world {
+  color: rebeccapurple;
+}
+
+svg {
+  border: 1px solid #555;
+  margin: 0.2em;
+}
+
+.derivatives {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+input {
+  margin: 1em;
+  width: 80%;
+  text-align: center;
+  font-size: 1.2em;
+}
