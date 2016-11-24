@@ -1,27 +1,43 @@
 import {div, h, input} from '@cycle/dom';
 import xs from 'xstream';
-import debounce from 'xstream/extra/debounce';
 
 function App ({DOM}) {
   // TODO - do this better
   const width = window.innerWidth - 30;
-  const height = (window.innerHeight - 120) / 3;;
+  const height = (window.innerHeight - 120) / 3;
 
- const f$ = DOM
+  const f$ = DOM
     .select('.f')
     .events('input')
-    .compose(debounce(150))
     .map(ev => ev.target.value)
     .startWith('x * x');
 
+  function executeF (fString) {
+    let points;
+
+    try {
+      const f = new Function('x', 'return ' + fString);
+
+      points = new Array(width)
+        .fill(0)
+        .map((_, index) => f(index - width / 2));
+    } catch (e) {
+      return null;
+    }
+
+    return points;
+  }
+
+  const points$ = f$.map(executeF).filter(points => !!points);
+
   return {
-    DOM: f$.map(f =>
+    DOM: xs.combine(f$, points$).map(([f, points]) =>
       div('.derivatives', [
         input('.f', {attrs: {value: f}}),
 
-        renderGraph({width, height, path: buildPath({width, height}, f)}),
-        renderGraph({width, height, path: buildDerivativePath({width, height}, f)}),
-        renderGraph({width, height, path: buildDerivativeDerivativePath({width, height}, f)}),
+        renderGraph({width, height, path: buildPath({width, height}, points)}),
+        renderGraph({width, height, path: buildDerivativePath({width, height}, points)}),
+        renderGraph({width, height, path: buildDerivativeDerivativePath({width, height}, points)}),
       ])
     )
   };
@@ -97,39 +113,24 @@ function derive (points) {
   return points.reduce(diff, initialState).differences;
 }
 
-function buildPath (dimensions, fString) {
+function buildPath (dimensions, points) {
   return pointsToPath(
     dimensions,
-    buildPoints(
-      dimensions,
-      fString
-    )
+    points
   );
 }
 
-function buildDerivativePath (dimensions, fString) {
+function buildDerivativePath (dimensions, points) {
   return pointsToPath(
     dimensions,
-    derive(
-      buildPoints(
-        dimensions,
-        fString
-      )
-    )
+    derive(points)
   );
 }
 
-function buildDerivativeDerivativePath (dimensions, fString) {
+function buildDerivativeDerivativePath (dimensions, points) {
   return pointsToPath(
     dimensions,
-    derive(
-      derive(
-        buildPoints(
-          dimensions,
-          fString
-        )
-      )
-    )
+    derive(derive(points))
   );
 }
 
